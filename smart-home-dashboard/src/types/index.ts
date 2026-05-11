@@ -1,0 +1,25 @@
+
+export interface Device {
+  id: string;
+  name: string;
+  room: string;
+  type: 'relay' | 'sensor' | 'ir';
+  status: boolean | number | string;
+  value?: number;
+  unit?: string;
+  lastUpdated?: string;
+  icon?: any;          
+}
+
+export interface Room {
+  id: string;
+  name: string;
+  icon: string;
+}
+
+export interface SensorData {
+  temperature: number;
+  humidity: number;
+  light: number;
+  timestamp: string;
+}
