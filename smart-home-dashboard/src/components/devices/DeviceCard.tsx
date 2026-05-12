@@ -39,19 +39,27 @@ export default function DeviceCard({
 
   const isOn = isRelay && typeof status === 'boolean' ? status : false;
 
-  // Безопасное форматирование значения
-  const displayValue = isSensor && value !== null && value !== undefined 
-    ? value.toFixed(value % 1 === 0 ? 0 : 1) 
-    : null;
+  // 🔥 Умный выбор иконки — для нашего датчика света всегда Sun
+  const getIcon = () => {
+    if (id === 'light1' || name.toLowerCase().includes('освещённость') || name.toLowerCase().includes('light')) {
+      return Sun;
+    }
+    if (isRelay) return Power;
+    if (isSensor) return Thermometer;
+    if (isIR) return Zap;
+    return Sun;
+  };
 
-  const Icon = type === 'relay' ? Power 
-             : type === 'sensor' ? Thermometer 
-             : type === 'ir' ? Zap 
-             : Sun;
+  const Icon = getIcon();
+
+  // Красивое отображение значения (lux уже откалиброван в store)
+  const displayValue = value !== null && value !== undefined
+    ? value.toFixed(0)   // lux — всегда целое число
+    : '—';
 
   return (
     <>
-      <div 
+      <div
         onClick={() => setIsDetailOpen(true)}
         className="group bg-zinc-900 border border-zinc-800 hover:border-sky-600/60 rounded-3xl overflow-hidden transition-all duration-300 hover:shadow-2xl hover:-translate-y-0.5 cursor-pointer"
       >
@@ -91,21 +99,25 @@ export default function DeviceCard({
           <div className="px-6 pb-8">
             <div className="flex items-baseline justify-center gap-1">
               <span className="text-6xl font-semibold tabular-nums tracking-tighter">
-                {displayValue !== null ? displayValue : '—'}
+                {displayValue}
               </span>
               <span className="text-3xl text-zinc-500 font-medium">
                 {unit || ''}
               </span>
             </div>
-            <div className="text-center text-xs text-zinc-500 mt-3">
-              Ожидаем данные от датчика...
-            </div>
+            
+            {/* Надпись только если данных реально нет */}
+            {(value === null || value === undefined) && (
+              <div className="text-center text-xs text-zinc-500 mt-3">
+                Ожидаем данные от датчика...
+              </div>
+            )}
           </div>
         )}
 
         <div className="p-6 pt-2 border-t border-zinc-800">
           {isRelay && (
-            <Button 
+            <Button
               variant={isOn ? "primary" : "secondary"}
               className="w-full py-3.5 text-base font-medium"
               onClick={(e) => { e.stopPropagation(); onToggle?.(id); }}
@@ -115,8 +127,8 @@ export default function DeviceCard({
           )}
 
           {isSensor && (
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               className="w-full text-sky-400 hover:text-sky-300 py-3"
               onClick={(e) => {
                 e.stopPropagation();
@@ -128,7 +140,7 @@ export default function DeviceCard({
           )}
 
           {isIR && (
-            <Button 
+            <Button
               variant="secondary"
               className="w-full py-3.5 text-base font-medium"
               onClick={(e) => { e.stopPropagation(); alert(`Отправлена ИК-команда для ${name}`); }}
