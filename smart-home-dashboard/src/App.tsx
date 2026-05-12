@@ -1,42 +1,49 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Layout from './components/layout/Layout';
 import QuickStatsBar from './components/devices/QuickStatsBar';
 import Toolbar from './components/devices/Toolbar';
 import DeviceCard from './components/devices/DeviceCard';
 import GraphsTab from './components/devices/GraphsTab';
 import Scenarios from './components/devices/Scenarios';
+import AddDeviceModal from './components/devices/AddDeviceModal';
 import { useStore } from './store/useStore';
 import { wsClient } from './lib/websocket';
 
 function App() {
   const {
+    devices,
     activeTab,
     setActiveTab,
-    initWebSocket,
     searchQuery,
     setSearchQuery,
     activeFilter,
     setActiveFilter,
     getFilteredDevices,
+    loadDevices,
     updateDevice,
     deleteDevice,
-    setSelectedSensorType,
+    addDevice,               // ← для добавления нового устройства
+    initWebSocket,
   } = useStore();
+
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   const filteredDevices = getFilteredDevices();
 
-  // Переход на графики по истории
-  const handleShowHistory = (device: any) => {
-    if (device.type === 'sensor') {
-      setSelectedSensorType('light');   // сразу выбираем график освещённости
-      setActiveTab('graphs');
-    }
-  };
-
+  // Загрузка устройств из БД + запуск WebSocket
   useEffect(() => {
+    loadDevices();
     initWebSocket();
-    return () => wsClient.disconnect();
-  }, [initWebSocket]);
+
+    return () => {
+      wsClient.disconnect();
+    };
+  }, [loadDevices, initWebSocket]);
+
+  // Обработчик добавления устройства
+  const handleAddDevice = async (newDevice: any) => {
+    await addDevice(newDevice);
+  };
 
   const renderContent = () => {
     switch (activeTab) {
@@ -48,16 +55,22 @@ function App() {
               <Toolbar
                 activeFilter={activeFilter}
                 onFilterChange={setActiveFilter}
-                onAddDevice={() => {}}
+                onAddDevice={() => setIsAddModalOpen(true)}   // ← кнопка "Добавить"
               />
+
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredDevices.map((device) => (
                   <DeviceCard
                     key={device.id}
-                    id={device.id}           // ← только id
+                    id={device.id}
                     onUpdate={updateDevice}
                     onDelete={deleteDevice}
-                    onShowHistory={handleShowHistory}
+                    onShowHistory={(device) => {
+                      if (device.type === 'sensor') {
+                        useStore.getState().setSelectedSensorType('light');
+                        setActiveTab('graphs');
+                      }
+                    }}
                   />
                 ))}
               </div>
@@ -70,10 +83,13 @@ function App() {
             </div>
           </>
         );
+
       case 'graphs':
         return <GraphsTab />;
+
       case 'scenarios':
         return <Scenarios />;
+
       default:
         return <div className="p-8 text-zinc-400">Вкладка в разработке</div>;
     }
@@ -83,13 +99,20 @@ function App() {
     <Layout
       activeTab={activeTab}
       onTabChange={setActiveTab}
-      onAddDevice={() => {}}
+      onAddDevice={() => setIsAddModalOpen(true)}     // ← кнопка в шапке тоже работает
       searchQuery={searchQuery}
       onSearchChange={setSearchQuery}
     >
       <div className="max-w-7xl mx-auto px-4 py-2">
         {renderContent()}
       </div>
+
+      {/* Модалка добавления устройства */}
+      <AddDeviceModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onAdd={handleAddDevice}
+      />
     </Layout>
   );
 }

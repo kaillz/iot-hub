@@ -20,19 +20,28 @@ interface NotificationsState {
 export const useNotifications = create<NotificationsState>((set) => ({
   notifications: [],
 
-  addNotification: (title, message, type) => 
-    set((state) => ({
-      notifications: [
-        {
-          id: Date.now().toString(),
-          title,
-          message,
-          type,
-          timestamp: new Date(),
-        },
-        ...state.notifications.slice(0, 4), // оставляем максимум 5 уведомлений
-      ],
-    })),
+  addNotification: (title, message, type) => {
+    const notification: Notification = {
+      id: Date.now().toString(36) + Math.random().toString(36).substr(2),
+      title,
+      message,
+      type,
+      timestamp: new Date(),
+    };
+
+    set((state) => {
+      const newNotifications = [notification, ...state.notifications].slice(0, 5); // максимум 5 уведомлений
+
+      // Автоудаление через 8 секунд
+      setTimeout(() => {
+        set((s) => ({
+          notifications: s.notifications.filter((n) => n.id !== notification.id),
+        }));
+      }, 8000);
+
+      return { notifications: newNotifications };
+    });
+  },
 
   removeNotification: (id) =>
     set((state) => ({

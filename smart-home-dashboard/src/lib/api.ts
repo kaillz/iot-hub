@@ -1,79 +1,91 @@
 // src/lib/api.ts
-import type { Device } from '../types';
+const API_BASE = 'http://localhost:3001/api';
 
-const STORAGE_KEY = 'smart-home-devices';
-
-export const deviceApi = {
-  // === GET ALL DEVICES ===
-  getAllDevices: async (): Promise<Device[]> => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        return JSON.parse(saved);
-      }
-      return [];
-    } catch (error) {
-      console.error('Ошибка загрузки устройств:', error);
-      return [];
-    }
+export const api = {
+  // Получить все устройства
+  async getAllDevices(): Promise<any[]> {
+    const res = await fetch(`${API_BASE}/devices`);
+    if (!res.ok) throw new Error('Failed to fetch devices');
+    return res.json();
   },
 
-  // === SAVE DEVICES ===
-  saveDevices: async (devices: Device[]): Promise<void> => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(devices));
-    } catch (error) {
-      console.error('Ошибка сохранения устройств:', error);
-    }
+  // Обновить устройство (имя, комнату и т.д.)
+  async updateDevice(id: string, data: any): Promise<any> {
+    const res = await fetch(`${API_BASE}/devices/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error('Failed to update device');
+    return res.json();
   },
 
-  // === TOGGLE RELAY ===
-  toggleRelay: async (deviceId: string): Promise<boolean> => {
-    try {
-      // Имитация задержки сети (потом заменишь на fetch к ESP)
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
-      console.log(`[API] Переключено реле: ${deviceId}`);
-      return true;
-    } catch (error) {
-      console.error('Ошибка переключения реле:', error);
-      throw error;
-    }
+  // Удалить устройство
+  async deleteDevice(id: string): Promise<void> {
+    const res = await fetch(`${API_BASE}/devices/${id}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error('Failed to delete device');
   },
 
-  // === UPDATE DEVICE ===
-  updateDevice: async (deviceId: string, data: Partial<Device>): Promise<Device> => {
-    try {
-      await new Promise(resolve => setTimeout(resolve, 250));
-      console.log(`[API] Обновлено устройство ${deviceId}:`, data);
-      return { id: deviceId, ...data } as Device;
-    } catch (error) {
-      console.error('Ошибка обновления устройства:', error);
-      throw error;
-    }
+  // Получить историю измерений (для графиков)
+  async getHistory(deviceId: string, type: string = 'light', limit: number = 200) {
+    const res = await fetch(
+      `${API_BASE}/devices/${deviceId}/history?type=${type}&limit=${limit}`
+    );
+    if (!res.ok) throw new Error('Failed to fetch history');
+    return res.json();
   },
 
-  // === DELETE DEVICE ===
-  deleteDevice: async (deviceId: string): Promise<boolean> => {
-    try {
-      await new Promise(resolve => setTimeout(resolve, 200));
-      console.log(`[API] Удалено устройство: ${deviceId}`);
-      return true;
-    } catch (error) {
-      console.error('Ошибка удаления устройства:', error);
-      throw error;
-    }
+  // Заглушка для реле и ИК (пока)
+  async toggleRelay(deviceId: string): Promise<boolean> {
+    console.log(`[API] Переключение реле ${deviceId} (будет реализовано позже)`);
+    return true;
   },
 
-  // === SEND IR COMMAND ===
-  sendIRCommand: async (deviceId: string, command: string): Promise<boolean> => {
-    try {
-      await new Promise(resolve => setTimeout(resolve, 400));
-      console.log(`[IR] Команда отправлена на ${deviceId}: ${command}`);
-      return true;
-    } catch (error) {
-      console.error('Ошибка отправки ИК команды:', error);
-      throw error;
-    }
-  }
+  async sendIRCommand(deviceId: string, command: string): Promise<boolean> {
+    console.log(`[IR] Команда ${command} на устройство ${deviceId}`);
+    return true;
+  },
+
+  async addDevice(deviceData: any): Promise<any> {
+    const res = await fetch(`${API_BASE}/devices`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(deviceData),
+    });
+
+    if (!res.ok) throw new Error('Не удалось добавить устройство');
+    return res.json();
+  },
+
+  // === ИК-ПУЛЬТЫ ===
+  async addIRRemote(name: string, room: string) {
+    const res = await fetch(`${API_BASE}/devices`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, room, type: 'ir_remote' }),
+    });
+    if (!res.ok) throw new Error('Не удалось добавить ИК-пульт');
+    return res.json();
+  },
+
+  async getIRCommands(remoteId: string) {
+    const res = await fetch(`${API_BASE}/ir-remotes/${remoteId}/commands`);
+    if (!res.ok) throw new Error('Не удалось загрузить команды');
+    return res.json();
+  },
+
+  async addIRCommand(remoteId: string, commandData: any) {
+    const res = await fetch(`${API_BASE}/ir-remotes/${remoteId}/commands`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(commandData),
+    });
+    if (!res.ok) throw new Error('Не удалось добавить команду');
+    return res.json();
+  },
+
+  async deleteIRCommand(commandId: string) {
+    const res = await fetch(`${API_BASE}/ir-commands/${commandId}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error('Не удалось удалить команду');
+  },
 };

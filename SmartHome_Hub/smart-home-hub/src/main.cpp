@@ -1,9 +1,11 @@
 #include <Arduino.h>
 #include <ArduinoJson.h>
+#include <IRremote.hpp>
 
-#define LIGHT_PIN PA0
-#define RELAY1_PIN PB0
-#define RELAY2_PIN PB1
+#define LIGHT_PIN      PA0
+#define IR_RECEIVE_PIN PA4
+#define IR_SEND_PIN    PA3
+#define LED_PIN        PC13
 
 HardwareSerial SerialESP(PA10, PA9);
 
@@ -11,38 +13,69 @@ void setup() {
   SerialESP.begin(115200);
   delay(2000);
 
-  pinMode(RELAY1_PIN, OUTPUT);
-  pinMode(RELAY2_PIN, OUTPUT);
-  digitalWrite(RELAY1_PIN, LOW);
-  digitalWrite(RELAY2_PIN, LOW);
+  pinMode(LED_PIN, OUTPUT);
+  digitalWrite(LED_PIN, HIGH);
+
+  IrReceiver.begin(IR_RECEIVE_PIN);
+  IrSender.begin(IR_SEND_PIN);
 
   SerialESP.println("{\"status\":\"started\"}");
 }
 
 void loop() {
-  static unsigned long last = 0;
+  static unsigned long lastSensor = 0;
 
-  if (millis() - last >= 1500) {
-    last = millis();
-
+  // Датчик света
+  if (millis() - lastSensor >= 1500) {
+    lastSensor = millis();
     int lightRaw = analogRead(LIGHT_PIN);
+    int lux = (950 - lightRaw) * 0.12;
 
     JsonDocument doc;
     doc["light_raw"] = lightRaw;
-    doc["relay1"] = digitalRead(RELAY1_PIN);
-    doc["relay2"] = digitalRead(RELAY2_PIN);
-
+    doc["lux"] = lux;
     serializeJson(doc, SerialESP);
     SerialESP.println();
   }
 
-  if (SerialESP.available()) {
-    String cmd = SerialESP.readStringUntil('\n');
-    cmd.trim();
+  // Приём ИК от пульта
+  if (IrReceiver.decode()) {
+    uint32_t code = IrReceiver.decodedIRData.decodedRawData;
 
-    if (cmd == "RELAY1_ON") digitalWrite(RELAY1_PIN, HIGH);
-    if (cmd == "RELAY1_OFF") digitalWrite(RELAY1_PIN, LOW);
-    if (cmd == "RELAY2_ON") digitalWrite(RELAY2_PIN, HIGH);
-    if (cmd == "RELAY2_OFF") digitalWrite(RELAY2_PIN, LOW);
+    JsonDocument doc;
+    doc["ir_received"] = code;
+    doc["protocol"] = "NEC";
+    doc["bits"] = IrReceiver.decodedIRData.numberOfBits;
+
+    serializeJson(doc, SerialESP);
+    SerialESP.println();
+
+    // Мигание при приёме
+    digitalWrite(LED_PIN, LOW); delay(80); digitalWrite(LED_PIN, HIGH);
+    delay(40);
+    digitalWrite(LED_PIN, LOW); delay(80); digitalWrite(LED_PIN, HIGH);
+
+    IrReceiver.resume();
+  }
+
+  // Отправка команды на устройство
+  if (SerialESP.available()) {
+    String line = SerialESP.readStringUntil('\n');
+    line.trim();
+
+    if (line.length() > 0) {
+      JsonDocument doc;
+      if (deserializeJson(doc, line) == DeserializationError::Ok && doc["type"] == "send_ir") {
+        uint32_t code = strtoul(doc["code"].as<const char*>(), nullptr, 0);
+
+        // 30 повторов — почти всегда хватает для кондиционеров и телевизоров
+        IrSender.sendNECRaw(code, 30);
+
+        // Длинное мигание
+        digitalWrite(LED_PIN, LOW); delay(250); digitalWrite(LED_PIN, HIGH);
+        delay(100);
+        digitalWrite(LED_PIN, LOW); delay(250); digitalWrite(LED_PIN, HIGH);
+      }
+    }
   }
 }

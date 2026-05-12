@@ -1,43 +1,65 @@
 // src/lib/websocket.ts
 class WebSocketClient {
-  private ws: WebSocket | null = null;
-  private reconnectInterval = 3000;
-  private reconnectTimer: NodeJS.Timeout | null = null;
-  private onMessageCallback: ((data: any) => void) | null = null;
+  public ws: WebSocket | null = null;           // ← сделал public
+  private listeners: ((data: any) => void)[] = [];
+  private reconnectInterval: any = null;        // ← убрал NodeJS.Timeout
 
-  connect(ip: string = '192.168.0.186') {   // ← замени на IP своего ESP8266
-    const url = `ws://${ip}:81`;
-    
-    this.ws = new WebSocket(url);
+  private readonly URL = 'ws://localhost:8080';
+
+  addListener(callback: (data: any) => void) {
+    this.listeners.push(callback);
+  }
+
+  removeListener(callback: (data: any) => void) {
+    this.listeners = this.listeners.filter((cb) => cb !== callback);
+  }
+
+  connect() {
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) return;
+
+    console.log(`🔌 Подключаемся к ${this.URL}`);
+    this.ws = new WebSocket(this.URL);
 
     this.ws.onopen = () => {
-      console.log(`✅ WebSocket connected to ${url}`);
+      console.log('✅ WebSocket подключён к backend (8080)');
+      if (this.reconnectInterval) clearInterval(this.reconnectInterval);
     };
 
     this.ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-        this.onMessageCallback?.(data);
+        this.listeners.forEach((cb) => cb(data));
       } catch (e) {
-        console.log('Raw:', event.data);
+        console.error('❌ Ошибка парсинга WS', e);
       }
     };
 
     this.ws.onclose = () => {
-      console.log('❌ Disconnected. Reconnecting...');
-      this.reconnectTimer = setTimeout(() => this.connect(ip), this.reconnectInterval);
+      console.log('❌ WebSocket отключён. Переподключение...');
+      this.reconnect();
     };
 
-    this.ws.onerror = () => console.error('WebSocket error');
+    this.ws.onerror = (err) => console.error('WebSocket error', err);
   }
 
-  setOnMessage(callback: (data: any) => void) {
-    this.onMessageCallback = callback;
+  private reconnect() {
+    if (this.reconnectInterval) return;
+    this.reconnectInterval = setInterval(() => this.connect(), 3000);
+  }
+
+  // Публичный метод отправки (используется в IRRemoteCard)
+  send(data: any) {
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      this.ws.send(JSON.stringify(data));
+    } else {
+      console.warn('WebSocket не подключён, сообщение не отправлено');
+    }
   }
 
   disconnect() {
-    if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
+    if (this.reconnectInterval) clearInterval(this.reconnectInterval);
     this.ws?.close();
+    this.ws = null;
   }
 }
 

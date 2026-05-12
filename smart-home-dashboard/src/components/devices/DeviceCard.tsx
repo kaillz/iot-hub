@@ -2,16 +2,11 @@ import Button from '../ui/Button';
 import { Power, Thermometer, Droplet, Sun, Zap } from 'lucide-react';
 import { useState } from 'react';
 import DeviceDetailModal from './DeviceDetailModal';
-import { useStore } from '../../store/useStore';   // ← добавили
+import IRRemoteCard from './IRRemoteCard';
+import { useStore } from '../../store/useStore';
 
 interface DeviceCardProps {
   id: string;
-  name: string;
-  room: string;
-  type: 'relay' | 'sensor' | 'ir';
-  status: boolean | number | string;
-  value?: number | null;
-  unit?: string;
   onToggle?: (id: string) => void;
   onUpdate?: (id: string, updatedData: any) => void;
   onDelete?: (id: string) => void;
@@ -25,14 +20,25 @@ export default function DeviceCard({
   onDelete,
   onShowHistory,
 }: DeviceCardProps) {
-  const device = useStore((state) =>
-    state.devices.find((d) => d.id === id)
-  ); // ← берём всегда актуальные данные из store
+  const device = useStore((state) => state.devices.find((d) => d.id === id));
 
   const [isDetailOpen, setIsDetailOpen] = useState(false);
 
   if (!device) return null;
 
+  // === ИК-ПУЛЬТ ===
+  if (device.type === 'ir_remote') {
+    return (
+      <IRRemoteCard
+        id={device.id}
+        name={device.name}
+        room={device.room}
+        onDelete={onDelete}
+      />
+    );
+  }
+
+  // === ОБЫЧНЫЕ УСТРОЙСТВА ===
   const isRelay = device.type === 'relay';
   const isSensor = device.type === 'sensor';
   const isIR = device.type === 'ir';
@@ -140,7 +146,7 @@ export default function DeviceCard({
       <DeviceDetailModal
         isOpen={isDetailOpen}
         onClose={() => setIsDetailOpen(false)}
-        device={device}                    // ← всегда актуальный
+        device={device}
         onUpdate={onUpdate}
         onDelete={onDelete}
       />

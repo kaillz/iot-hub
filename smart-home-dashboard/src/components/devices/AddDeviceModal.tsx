@@ -1,42 +1,52 @@
 import { useState } from 'react';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
+import { api } from '../../lib/api';
+import { useStore } from '../../store/useStore';
 
 interface AddDeviceModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAdd: (device: any) => void;
 }
 
-export default function AddDeviceModal({ isOpen, onClose, onAdd }: AddDeviceModalProps) {
+export default function AddDeviceModal({ isOpen, onClose }: AddDeviceModalProps) {
+  const { loadDevices } = useStore();
+
   const [formData, setFormData] = useState({
     name: '',
-    type: 'relay' as 'relay' | 'sensor' | 'ir',
+    type: 'network' as 'network' | 'ir_remote',
     room: 'Гостиная',
+    ip: '',                    // только для network
   });
 
   const rooms = ['Гостиная', 'Кухня', 'Спальня', 'Ванная', 'Коридор'];
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name.trim()) return;
 
-    onAdd({
-      id: Date.now().toString(),
-      name: formData.name.trim(),
-      room: formData.room,
-      type: formData.type,
-      status: formData.type === 'relay' ? false : formData.type === 'sensor' ? 0 : 'ready',
-      icon: null,
-    });
+    try {
+      await api.addDevice({
+        name: formData.name.trim(),
+        room: formData.room,
+        type: formData.type,
+        ip: formData.type === 'network' ? formData.ip.trim() : undefined,
+      });
 
-    setFormData({ name: '', type: 'relay', room: 'Гостиная' });
-    onClose();
+      await loadDevices();
+      onClose();
+
+      setFormData({ name: '', type: 'network', room: 'Гостиная', ip: '' });
+    } catch (err) {
+      console.error('Ошибка добавления устройства', err);
+      alert('Не удалось добавить устройство');
+    }
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Добавить новое устройство">
+    <Modal isOpen={isOpen} onClose={onClose} title="Добавить устройство">
       <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Название */}
         <div>
           <label className="block text-sm text-zinc-400 mb-2">Название устройства</label>
           <input
@@ -44,35 +54,41 @@ export default function AddDeviceModal({ isOpen, onClose, onAdd }: AddDeviceModa
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
             className="w-full bg-zinc-950 border border-zinc-700 rounded-2xl px-4 py-3 focus:outline-none focus:border-sky-600"
-            placeholder="Например: Освещение над столом"
+            placeholder="Например: Кондиционер в спальне"
             required
           />
         </div>
 
+        {/* Тип устройства */}
         <div>
           <label className="block text-sm text-zinc-400 mb-2">Тип устройства</label>
-          <div className="grid grid-cols-3 gap-3">
-            {[
-              { value: 'relay', label: 'Реле' },
-              { value: 'sensor', label: 'Датчик' },
-              { value: 'ir', label: 'ИК' },
-            ].map((t) => (
-              <button
-                key={t.value}
-                type="button"
-                onClick={() => setFormData({ ...formData, type: t.value as any })}
-                className={`py-3 rounded-2xl text-sm font-medium transition-all ${
-                  formData.type === t.value
-                    ? 'bg-sky-600 text-white'
-                    : 'bg-zinc-800 hover:bg-zinc-700'
-                }`}
-              >
-                {t.label}
-              </button>
-            ))}
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() => setFormData({ ...formData, type: 'network' })}
+              className={`py-4 rounded-2xl text-sm font-medium transition-all ${
+                formData.type === 'network'
+                  ? 'bg-sky-600 text-white'
+                  : 'bg-zinc-800 hover:bg-zinc-700'
+              }`}
+            >
+              🌐 Сетевое устройство
+            </button>
+            <button
+              type="button"
+              onClick={() => setFormData({ ...formData, type: 'ir_remote' })}
+              className={`py-4 rounded-2xl text-sm font-medium transition-all ${
+                formData.type === 'ir_remote'
+                  ? 'bg-amber-600 text-white'
+                  : 'bg-zinc-800 hover:bg-zinc-700'
+              }`}
+            >
+              📡 ИК-пульт (обучаемый)
+            </button>
           </div>
         </div>
 
+        {/* Комната */}
         <div>
           <label className="block text-sm text-zinc-400 mb-2">Комната</label>
           <select
@@ -86,21 +102,31 @@ export default function AddDeviceModal({ isOpen, onClose, onAdd }: AddDeviceModa
           </select>
         </div>
 
+        {/* Поле IP — только для сетевых */}
+        {formData.type === 'network' && (
+          <div>
+            <label className="block text-sm text-zinc-400 mb-2">IP-адрес (опционально)</label>
+            <input
+              type="text"
+              value={formData.ip}
+              onChange={(e) => setFormData({ ...formData, ip: e.target.value })}
+              className="w-full bg-zinc-950 border border-zinc-700 rounded-2xl px-4 py-3 focus:outline-none focus:border-sky-600"
+              placeholder="192.168.1.XXX"
+            />
+          </div>
+        )}
+
         <div className="flex gap-3 pt-4">
-          <Button 
-            type="button" 
-            variant="secondary" 
+          <Button
+            type="button"
+            variant="secondary"
             className="flex-1 py-3"
             onClick={onClose}
           >
             Отмена
           </Button>
-          <Button 
-            type="submit" 
-            variant="primary" 
-            className="flex-1 py-3"
-          >
-            Добавить устройство
+          <Button type="submit" variant="primary" className="flex-1 py-3">
+            Добавить
           </Button>
         </div>
       </form>

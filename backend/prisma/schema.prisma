@@ -1,0 +1,66 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Device {
+  id          String   @id @default(uuid())
+  name        String
+  room        String
+  type        String
+  status      String?
+  value       Float?
+  unit        String?
+  raw         Float?
+  lastUpdated DateTime @default(now())
+
+  measurements Measurement[]
+  irRemote     IRRemote?      // связь с ИК-пультом (один к одному)
+
+  @@map("devices")
+}
+
+model Measurement {
+  id        String   @id @default(uuid())
+  deviceId  String
+  type      String
+  value     Float
+  timestamp DateTime @default(now())
+
+  device    Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@map("measurements")
+}
+
+// ================== ИК-ПУЛЬТЫ ==================
+model IRRemote {
+  id          String      @id @default(uuid())
+  name        String
+  room        String
+  lastUsed    DateTime?
+
+  deviceId    String      @unique
+  device      Device      @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  commands    IRCommand[]
+
+  @@map("ir_remotes")
+}
+
+model IRCommand {
+  id          String     @id @default(uuid())
+  remoteId    String
+  name        String     // "Power", "Temp Up", "Volume +"
+  code        String     // hex-код сигнала
+  protocol    String?
+  bits        Int?
+  order       Int        // порядок кнопок
+
+  remote      IRRemote   @relation(fields: [remoteId], references: [id], onDelete: Cascade)
+
+  @@map("ir_commands")
+}
