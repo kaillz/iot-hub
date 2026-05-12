@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useStore } from '../../store/useStore';
 
-const initialChartData = [
+const initialFakeData = [
   { time: '00:00', temperature: 22.1, humidity: 48, light: 12 },
   { time: '04:00', temperature: 21.4, humidity: 52, light: 8 },
   { time: '08:00', temperature: 23.8, humidity: 45, light: 180 },
@@ -13,16 +13,29 @@ const initialChartData = [
 
 export default function GraphsTab() {
   const selectedSensorType = useStore((state) => state.selectedSensorType);
+  const lightHistory = useStore((state) => state.lightHistory);
 
-  const [currentSensor, setCurrentSensor] = useState<'temperature' | 'humidity' | 'light'>('temperature');
-  const [chartData, setChartData] = useState(initialChartData);
+  const [currentSensor, setCurrentSensor] = useState<'temperature' | 'humidity' | 'light'>('light'); // по умолчанию свет
 
-  // Автоматически переключаем график при выборе датчика из карточки
+  // Автоматически переключаем при выборе из карточки
   useEffect(() => {
     if (selectedSensorType) {
       setCurrentSensor(selectedSensorType);
     }
   }, [selectedSensorType]);
+
+  // Преобразуем lightHistory в формат Recharts
+  const realLightData = lightHistory.map((point) => ({
+    time: new Date(point.timestamp).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
+    light: point.lux,
+    temperature: 0, // заглушка
+    humidity: 0,    // заглушка
+  }));
+
+  // Для температуры и влажности пока используем тестовые данные
+  const chartData = currentSensor === 'light' && realLightData.length > 0
+    ? realLightData
+    : initialFakeData;
 
   const sensorConfigs = {
     temperature: { key: 'temperature', label: 'Температура (°C)', color: '#f59e0b' },
@@ -37,7 +50,11 @@ export default function GraphsTab() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h3 className="text-2xl font-semibold">Аналитика и графики</h3>
-          <p className="text-zinc-500 mt-1">Реальные данные с BME280 и KY-018</p>
+          <p className="text-zinc-500 mt-1">
+            {currentSensor === 'light' 
+              ? 'Реальные данные с KY-018 (обновление в реальном времени)' 
+              : 'Реальные данные с BME280 (скоро)'}
+          </p>
         </div>
 
         <div className="flex gap-2 bg-zinc-900 border border-zinc-800 rounded-2xl p-1">
@@ -71,7 +88,6 @@ export default function GraphsTab() {
                 color: '#fff'
               }} 
             />
-
             <Line 
               type="natural"
               dataKey={config.key} 
@@ -86,7 +102,9 @@ export default function GraphsTab() {
       </div>
 
       <div className="mt-6 text-center text-xs text-zinc-500">
-        Ожидаем реальные данные от ESP8266 • Обновление каждые 2 секунды
+        {currentSensor === 'light' 
+          ? `Обновление каждые ~10 мин • ${lightHistory.length} точек` 
+          : 'Ожидаем реальные данные от ESP8266 • Обновление каждые 2 секунды'}
       </div>
     </div>
   );

@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
+import { useStore } from '../../store/useStore';
 
 interface DeviceDetailModalProps {
   isOpen: boolean;
@@ -13,37 +14,52 @@ interface DeviceDetailModalProps {
 export default function DeviceDetailModal({
   isOpen,
   onClose,
-  device,
+  device: initialDevice,
   onUpdate,
-  onDelete
+  onDelete,
 }: DeviceDetailModalProps) {
+
+  const { devices, updateDevice, deleteDevice } = useStore();
+
+  const currentDevice = devices.find(d => d.id === initialDevice?.id);
 
   const [name, setName] = useState('');
   const [room, setRoom] = useState('Гостиная');
 
-  // Инициализация формы при открытии модалки
+  // 🔥 Фиксируем момент открытия модалки (чтобы не сбрасывать при вводе)
+  const prevOpenRef = useRef(false);
+
   useEffect(() => {
-    if (isOpen && device) {
-      setName(device.name || '');
-      setRoom(device.room || 'Гостиная');
+    if (isOpen && !prevOpenRef.current && currentDevice) {
+      // Сбрасываем поля ТОЛЬКО при открытии
+      setName(currentDevice.name || '');
+      setRoom(currentDevice.room || 'Гостиная');
     }
-  }, [isOpen, device]);
+    prevOpenRef.current = isOpen;
+  }, [isOpen, currentDevice]);
 
   const handleSave = () => {
-    if (!device?.id) return;
-    onUpdate?.(device.id, { name, room });
+    if (!currentDevice?.id) return;
+    
+    const updatedData = { name, room };
+    
+    // Обновляем и через пропс, и напрямую в store
+    onUpdate?.(currentDevice.id, updatedData);
+    updateDevice(currentDevice.id, updatedData);
+    
     onClose();
   };
 
   const handleDelete = () => {
-    if (!device?.id) return;
+    if (!currentDevice?.id) return;
     if (confirm(`Удалить устройство "${name}"?`)) {
-      onDelete?.(device.id);
+      onDelete?.(currentDevice.id);
+      deleteDevice(currentDevice.id);
       onClose();
     }
   };
 
-  if (!isOpen || !device) return null;
+  if (!isOpen || !currentDevice) return null;
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Настройка устройства">

@@ -2,6 +2,7 @@ import Button from '../ui/Button';
 import { Power, Thermometer, Droplet, Sun, Zap } from 'lucide-react';
 import { useState } from 'react';
 import DeviceDetailModal from './DeviceDetailModal';
+import { useStore } from '../../store/useStore';   // ← добавили
 
 interface DeviceCardProps {
   id: string;
@@ -19,31 +20,27 @@ interface DeviceCardProps {
 
 export default function DeviceCard({
   id,
-  name,
-  room,
-  type,
-  status,
-  value,
-  unit,
   onToggle,
   onUpdate,
   onDelete,
-  onShowHistory
+  onShowHistory,
 }: DeviceCardProps) {
+  const device = useStore((state) =>
+    state.devices.find((d) => d.id === id)
+  ); // ← берём всегда актуальные данные из store
 
   const [isDetailOpen, setIsDetailOpen] = useState(false);
 
-  const isRelay = type === 'relay';
-  const isSensor = type === 'sensor';
-  const isIR = type === 'ir';
+  if (!device) return null;
 
-  const isOn = isRelay && typeof status === 'boolean' ? status : false;
+  const isRelay = device.type === 'relay';
+  const isSensor = device.type === 'sensor';
+  const isIR = device.type === 'ir';
 
-  // 🔥 Умный выбор иконки — для нашего датчика света всегда Sun
+  const isOn = isRelay && typeof device.status === 'boolean' ? device.status : false;
+
   const getIcon = () => {
-    if (id === 'light1' || name.toLowerCase().includes('освещённость') || name.toLowerCase().includes('light')) {
-      return Sun;
-    }
+    if (device.id === 'light1' || device.name.toLowerCase().includes('освещённость')) return Sun;
     if (isRelay) return Power;
     if (isSensor) return Thermometer;
     if (isIR) return Zap;
@@ -52,9 +49,8 @@ export default function DeviceCard({
 
   const Icon = getIcon();
 
-  // Красивое отображение значения (lux уже откалиброван в store)
-  const displayValue = value !== null && value !== undefined
-    ? value.toFixed(0)   // lux — всегда целое число
+  const displayValue = device.value !== null && device.value !== undefined
+    ? device.value.toFixed(0)
     : '—';
 
   return (
@@ -71,16 +67,14 @@ export default function DeviceCard({
               </div>
 
               <div className="min-w-0 flex-1">
-                <h4 className="font-semibold text-lg leading-tight tracking-tight">{name}</h4>
-                <p className="text-zinc-500 text-sm mt-1">{room}</p>
+                <h4 className="font-semibold text-lg leading-tight tracking-tight">{device.name}</h4>
+                <p className="text-zinc-500 text-sm mt-1">{device.room}</p>
               </div>
             </div>
 
             {isRelay && (
               <div className={`px-4 py-1 text-xs font-semibold rounded-full border self-start mt-1 ${
-                isOn 
-                  ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' 
-                  : 'bg-zinc-700 text-zinc-400 border-zinc-600'
+                isOn ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' : 'bg-zinc-700 text-zinc-400 border-zinc-600'
               }`}>
                 {isOn ? 'ВКЛ' : 'ВЫКЛ'}
               </div>
@@ -94,7 +88,6 @@ export default function DeviceCard({
           </div>
         </div>
 
-        {/* Значение для датчиков */}
         {isSensor && (
           <div className="px-6 pb-8">
             <div className="flex items-baseline justify-center gap-1">
@@ -102,16 +95,9 @@ export default function DeviceCard({
                 {displayValue}
               </span>
               <span className="text-3xl text-zinc-500 font-medium">
-                {unit || ''}
+                {device.unit || ''}
               </span>
             </div>
-            
-            {/* Надпись только если данных реально нет */}
-            {(value === null || value === undefined) && (
-              <div className="text-center text-xs text-zinc-500 mt-3">
-                Ожидаем данные от датчика...
-              </div>
-            )}
           </div>
         )}
 
@@ -120,7 +106,7 @@ export default function DeviceCard({
             <Button
               variant={isOn ? "primary" : "secondary"}
               className="w-full py-3.5 text-base font-medium"
-              onClick={(e) => { e.stopPropagation(); onToggle?.(id); }}
+              onClick={(e) => { e.stopPropagation(); onToggle?.(device.id); }}
             >
               {isOn ? "Выключить" : "Включить"}
             </Button>
@@ -132,7 +118,7 @@ export default function DeviceCard({
               className="w-full text-sky-400 hover:text-sky-300 py-3"
               onClick={(e) => {
                 e.stopPropagation();
-                onShowHistory?.({ id, name, room, type, status, value, unit });
+                onShowHistory?.(device);
               }}
             >
               Посмотреть историю измерений
@@ -143,7 +129,7 @@ export default function DeviceCard({
             <Button
               variant="secondary"
               className="w-full py-3.5 text-base font-medium"
-              onClick={(e) => { e.stopPropagation(); alert(`Отправлена ИК-команда для ${name}`); }}
+              onClick={(e) => { e.stopPropagation(); alert(`Отправлена ИК-команда для ${device.name}`); }}
             >
               Отправить команду
             </Button>
@@ -154,7 +140,7 @@ export default function DeviceCard({
       <DeviceDetailModal
         isOpen={isDetailOpen}
         onClose={() => setIsDetailOpen(false)}
-        device={{ id, name, room, type, status, value, unit }}
+        device={device}                    // ← всегда актуальный
         onUpdate={onUpdate}
         onDelete={onDelete}
       />
