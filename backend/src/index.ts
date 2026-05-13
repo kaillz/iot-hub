@@ -15,15 +15,13 @@ app.use(cors());
 app.use(express.json());
 
 let lastMeasurementTime = 0;
-const MEASUREMENT_INTERVAL = 10 * 60 * 1000; // 10 минут
+const MEASUREMENT_INTERVAL = 10 * 60 * 1000;
 
 // ===================== Автоочистка старых измерений =====================
 async function cleanOldMeasurements() {
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-  const deleted = await prisma.measurement.deleteMany({
-    where: { timestamp: { lt: sevenDaysAgo } },
-  });
-  if (deleted.count > 0) console.log(`🧹 Удалено ${deleted.count} старых записей`);
+  const deleted = await prisma.measurement.deleteMany({ where: { timestamp: { lt: sevenDaysAgo } } });
+  if (deleted.count > 0) console.log(`🧹 Удалено ${deleted.count} записей`);
 }
 cleanOldMeasurements();
 setInterval(cleanOldMeasurements, 24 * 60 * 60 * 1000);
@@ -33,14 +31,7 @@ async function seedDatabase() {
   const existing = await prisma.device.findUnique({ where: { id: 'light1' } });
   if (!existing) {
     await prisma.device.create({
-      data: {
-        id: 'light1',
-        name: 'Освещённость',
-        room: 'Гостиная',
-        type: 'sensor',
-        value: 0,
-        unit: 'lux',
-      },
+      data: { id: 'light1', name: 'Освещённость', room: 'Гостиная', type: 'sensor', value: 0, unit: 'lux' },
     });
   }
 }
@@ -54,6 +45,7 @@ app.get('/api/devices', async (req, res) => {
 
 app.post('/api/devices', async (req, res) => {
   const { name, room, type } = req.body;
+
   const device = await prisma.device.create({
     data: { name, room, type, unit: type === 'sensor' ? 'lux' : undefined },
   });
@@ -135,6 +127,26 @@ app.delete('/api/ir-commands/:commandId', async (req, res) => {
   res.status(204).send();
 });
 
+app.put('/api/ir-commands/:commandId', async (req, res) => {
+  const { commandId } = req.params;
+  const { name, code, protocol, bits } = req.body;
+
+  try {
+    const command = await prisma.iRCommand.update({
+      where: { id: commandId },
+      data: {
+        name: name || undefined,
+        code: code ? String(code) : undefined,
+        protocol: protocol || undefined,
+        bits: bits || undefined,
+      },
+    });
+    res.json(command);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ===================== WebSocket =====================
 const wss = new WebSocketServer({ port: WS_PORT });
 
@@ -153,29 +165,23 @@ wss.on('connection', (ws) => {
     try {
       const data = JSON.parse(message.toString());
 
-      // Отправка ИК-команды на STM32
       if (data.type === 'send_ir') {
         console.log(`📤 Отправка ИК-команды на STM32: ${data.name} (${data.code})`);
         const payload = JSON.stringify({ type: 'send_ir', code: data.code });
-        wss.clients.forEach((client) => {
-          if (client.readyState === WebSocket.OPEN) client.send(payload);
-        });
+        wss.clients.forEach((client) => client.readyState === WebSocket.OPEN && client.send(payload));
         return;
       }
 
-      // Получен ИК-код от приёмника
       if (data.ir_received !== undefined) {
-        console.log(`📥 Получен ИК-код: 0x${parseInt(data.ir_received).toString(16).toUpperCase()}`);
         const broadcast = JSON.stringify({
           type: 'ir_learned',
           code: data.ir_received,
-          protocol: data.protocol,
-          bits: data.bits,
+          protocol: data.protocol || 'NEC',
+          bits: data.bits || 32,
         });
         wss.clients.forEach((client) => client.readyState === WebSocket.OPEN && client.send(broadcast));
       }
 
-      // Данные от датчика света
       if (data.light_raw !== undefined) {
         const raw = Number(data.light_raw);
         const lux = Math.max(0, Math.min(1000, Math.floor((950 - raw) * 0.12)));
@@ -186,16 +192,11 @@ wss.on('connection', (ws) => {
           create: { id: 'light1', name: 'Освещённость', room: 'Гостиная', type: 'sensor', value: lux, unit: 'lux', raw },
         });
 
-        if (Date.now() - lastMeasurementTime >= MEASUREMENT_INTERVAL) {
-          await prisma.measurement.create({ data: { deviceId: 'light1', type: 'light', value: lux } });
-          lastMeasurementTime = Date.now();
-        }
-
         const broadcastData = JSON.stringify({ light_raw: raw, lux });
         wss.clients.forEach((client) => client.readyState === WebSocket.OPEN && client.send(broadcastData));
       }
     } catch (e) {
-      console.error('WebSocket error:', e);
+      // Тихо игнорируем отладочные строки от STM32 (IR_RECEIVED и т.п.)
     }
   });
 });

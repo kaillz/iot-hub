@@ -88,4 +88,14 @@ export const api = {
     const res = await fetch(`${API_BASE}/ir-commands/${commandId}`, { method: 'DELETE' });
     if (!res.ok) throw new Error('Не удалось удалить команду');
   },
+
+  updateIRCommand: async (commandId: string, data: any): Promise<any> => {
+    const res = await fetch(`http://localhost:3001/api/ir-commands/${commandId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error('Ошибка обновления команды');
+    return res.json();
+  },
 };

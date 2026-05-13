@@ -25,7 +25,6 @@ void setup() {
 void loop() {
   static unsigned long lastSensor = 0;
 
-  // Датчик света
   if (millis() - lastSensor >= 1500) {
     lastSensor = millis();
     int lightRaw = analogRead(LIGHT_PIN);
@@ -38,7 +37,6 @@ void loop() {
     SerialESP.println();
   }
 
-  // Приём ИК от пульта
   if (IrReceiver.decode()) {
     uint32_t code = IrReceiver.decodedIRData.decodedRawData;
 
@@ -50,7 +48,6 @@ void loop() {
     serializeJson(doc, SerialESP);
     SerialESP.println();
 
-    // Мигание при приёме
     digitalWrite(LED_PIN, LOW); delay(80); digitalWrite(LED_PIN, HIGH);
     delay(40);
     digitalWrite(LED_PIN, LOW); delay(80); digitalWrite(LED_PIN, HIGH);
@@ -58,7 +55,6 @@ void loop() {
     IrReceiver.resume();
   }
 
-  // Отправка команды на устройство
   if (SerialESP.available()) {
     String line = SerialESP.readStringUntil('\n');
     line.trim();
@@ -68,13 +64,33 @@ void loop() {
       if (deserializeJson(doc, line) == DeserializationError::Ok && doc["type"] == "send_ir") {
         uint32_t code = strtoul(doc["code"].as<const char*>(), nullptr, 0);
 
-        // 30 повторов — почти всегда хватает для кондиционеров и телевизоров
-        IrSender.sendNECRaw(code, 30);
+        // === 7 способов отправки для Bailu/Gree ===
 
-        // Длинное мигание
-        digitalWrite(LED_PIN, LOW); delay(250); digitalWrite(LED_PIN, HIGH);
+        // 1. Чистый raw (много повторов)
+        IrSender.sendNECRaw(code, 120);
+
+        // 2. address = 0x00, command = младшие 16 бит
+        IrSender.sendNEC(0x00, code & 0xFFFF, 20);
+
+        // 3. address = 0xB2 (очень часто у Bailu/Gree), command = младшие 8 бит
+        IrSender.sendNEC(0xB2, code & 0xFF, 20);
+
+        // 4. address = старшие 16 бит, command = младшие 8 бит
+        IrSender.sendNEC((code >> 16) & 0xFFFF, code & 0xFF, 20);
+
+        // 5. address = 0x00, command = биты 8-15
+        IrSender.sendNEC(0x00, (code >> 8) & 0xFF, 20);
+
+        // 6. address = 0xB2, command = биты 8-15
+        IrSender.sendNEC(0xB2, (code >> 8) & 0xFF, 20);
+
+        // 7. Очень много повторов raw (на случай "упрямого" кондиционера)
+        IrSender.sendNECRaw(code, 200);
+
+        // Длинное мигание при отправке
+        digitalWrite(LED_PIN, LOW); delay(300); digitalWrite(LED_PIN, HIGH);
         delay(100);
-        digitalWrite(LED_PIN, LOW); delay(250); digitalWrite(LED_PIN, HIGH);
+        digitalWrite(LED_PIN, LOW); delay(300); digitalWrite(LED_PIN, HIGH);
       }
     }
   }
