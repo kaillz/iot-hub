@@ -186,17 +186,33 @@ wss.on('connection', (ws) => {
         const raw = Number(data.light_raw);
         const lux = Math.max(0, Math.min(1000, Math.floor((950 - raw) * 0.12)));
 
+        const now = Date.now();
+
         await prisma.device.upsert({
           where: { id: 'light1' },
           update: { value: lux, raw, lastUpdated: new Date() },
           create: { id: 'light1', name: 'Освещённость', room: 'Гостиная', type: 'sensor', value: lux, unit: 'lux', raw },
         });
 
+        if (now - lastMeasurementTime >= MEASUREMENT_INTERVAL) {
+          lastMeasurementTime = now;
+
+          await prisma.measurement.create({
+            data: {
+              deviceId: 'light1',
+              type: 'light',
+              value: lux,
+              timestamp: new Date(),
+            }
+          });
+
+          console.log(`✅ Сохранено в Measurement (throttled): lux=${lux}`);
+        }
+
         const broadcastData = JSON.stringify({ light_raw: raw, lux });
         wss.clients.forEach((client) => client.readyState === WebSocket.OPEN && client.send(broadcastData));
       }
     } catch (e) {
-      // Тихо игнорируем отладочные строки от STM32 (IR_RECEIVED и т.п.)
     }
   });
 });
