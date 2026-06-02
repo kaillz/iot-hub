@@ -11,7 +11,6 @@ import { wsClient } from './lib/websocket';
 
 function App() {
   const {
-    devices,
     activeTab,
     setActiveTab,
     searchQuery,
@@ -23,13 +22,23 @@ function App() {
     updateDevice,
     deleteDevice,
     toggleRelay,
-    addDevice,               // ← для добавления нового устройства
     initWebSocket,
+    isDark,
   } = useStore();
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   const filteredDevices = getFilteredDevices();
+
+  // Применяем класс темы к корневому элементу
+  useEffect(() => {
+    const html = document.documentElement;
+    if (isDark) {
+      html.classList.add('dark');
+    } else {
+      html.classList.remove('dark');
+    }
+  }, [isDark]);
 
   // Загрузка устройств из БД + запуск WebSocket
   useEffect(() => {
@@ -40,11 +49,6 @@ function App() {
       wsClient.disconnect();
     };
   }, [loadDevices, initWebSocket]);
-
-  // Обработчик добавления устройства
-  const handleAddDevice = async (newDevice: any) => {
-    await addDevice(newDevice);
-  };
 
   const renderContent = () => {
     switch (activeTab) {
@@ -113,7 +117,6 @@ function App() {
       <AddDeviceModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
-        onAdd={handleAddDevice}
       />
     </Layout>
   );

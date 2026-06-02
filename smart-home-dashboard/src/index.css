@@ -6,18 +6,52 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Тёмная тема (по умолчанию) */
+html.dark {
+  background-color: #09090b;
+  color: #fafafa;
+}
+
+/* Светлая тема - инвертируем цвета */
+html:not(.dark) {
+  background-color: #fafafa;
+  color: #09090b;
+  filter: invert(1) hue-rotate(180deg);
+}
+
+html:not(.dark) img,
+html:not(.dark) svg {
+  filter: invert(1) hue-rotate(180deg);
+}
+
 /* Кастомный скроллбар для тёмной темы */
-::-webkit-scrollbar {
+html.dark ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
-::-webkit-scrollbar-track {
+html.dark ::-webkit-scrollbar-track {
   background: #27272a;
 }
-::-webkit-scrollbar-thumb {
+html.dark ::-webkit-scrollbar-thumb {
   background: #52525b;
   border-radius: 3px;
 }
-::-webkit-scrollbar-thumb:hover {
+html.dark ::-webkit-scrollbar-thumb:hover {
   background: #71717a;
+}
+
+/* Скроллбар для светлой темы */
+html:not(.dark) ::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+html:not(.dark) ::-webkit-scrollbar-track {
+  background: #f4f4f5;
+}
+html:not(.dark) ::-webkit-scrollbar-thumb {
+  background: #d4d4d8;
+  border-radius: 3px;
+}
+html:not(.dark) ::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a5;
 }

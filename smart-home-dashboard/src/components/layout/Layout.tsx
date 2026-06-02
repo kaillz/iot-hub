@@ -1,9 +1,11 @@
 import Header from './Header';
 import Sidebar from './Sidebar';
 
+type TabType = 'devices' | 'graphs' | 'scenarios';
+
 interface LayoutProps {
-  activeTab: string;
-  onTabChange: (tab: string) => void;
+  activeTab: TabType;
+  onTabChange: (tab: TabType) => void;
   onAddDevice: () => void;
   searchQuery: string;
   onSearchChange: (query: string) => void;

@@ -2,18 +2,20 @@ import { Plus, Search, Sun, Moon, Home } from 'lucide-react';
 import Button from '../ui/Button';
 import { useStore } from '../../store/useStore';
 
+type TabType = 'devices' | 'graphs' | 'scenarios';
+
 interface HeaderProps {
-  activeTab: string;
-  onTabChange: (tab: string) => void;
+  activeTab: TabType;
+  onTabChange: (tab: TabType) => void;
   onAddDevice: () => void;
   searchQuery: string;
   onSearchChange: (query: string) => void;
 }
 
 const tabs = [
-  { id: 'devices', label: 'Устройства' },
-  { id: 'scenes', label: 'Сценарии' },
-  { id: 'graphs', label: 'Графики' },
+  { id: 'devices' as const, label: 'Устройства' },
+  { id: 'scenarios' as const, label: 'Сценарии' },
+  { id: 'graphs' as const, label: 'Графики' },
 ];
 
 export default function Header({ 
