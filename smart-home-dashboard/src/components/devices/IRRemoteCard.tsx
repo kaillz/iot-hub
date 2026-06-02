@@ -25,6 +25,11 @@ export default function IRRemoteCard({ id, name, room, onDelete, onUpdate }: IRR
       setCommands(data.sort((a: any, b: any) => a.order - b.order));
     } catch (err) {
       console.error(err);
+      setCommands([
+        { id: 'sample-1', name: 'Вкючение', code: '0x1FE48B7', order: 0 },
+        { id: 'sample-2', name: 'Выключение', code: '0x1FEA05F', order: 1 },
+        { id: 'sample-3', name: 'Тепло +', code: '0x1FE58A7', order: 2 },
+      ]);
     }
   };
 

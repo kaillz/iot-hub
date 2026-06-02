@@ -4,7 +4,16 @@ import { useStore } from '../../store/useStore';
 export default function QuickStatsBar() {
   const { devices, isConnected } = useStore();
   const lightDevice = devices.find(d => d.id === 'light1');
+  const tempDevice = devices.find(
+    (d) => d.id === 'temp1' || d.name.toLowerCase().includes('температура')
+  );
+  const humidityDevice = devices.find(
+    (d) => d.id === 'hum1' || d.name.toLowerCase().includes('влажность')
+  );
+
   const lux = lightDevice?.value ?? null;
+  const temperature = tempDevice?.value ?? null;
+  const humidity = humidityDevice?.value ?? null;
   const raw = lightDevice?.raw ?? null;   // ← отладка
 
   return (
@@ -21,14 +30,19 @@ export default function QuickStatsBar() {
           </div>
         </div>
 
-        {/* заглушки BME */}
-        <div className="flex items-center gap-3 opacity-40">
+        <div className="flex items-center gap-3">
           <Thermometer size={24} className="text-orange-400" />
-          <div><span className="font-semibold text-xl">—</span><span className="text-zinc-500 ml-1">°C</span></div>
+          <div>
+            <span className="font-semibold text-xl">{temperature !== null ? temperature : '—'}</span>
+            <span className="text-zinc-500 ml-1">°C</span>
+          </div>
         </div>
-        <div className="flex items-center gap-3 opacity-40">
+        <div className="flex items-center gap-3">
           <Droplet size={24} className="text-sky-400" />
-          <div><span className="font-semibold text-xl">—</span><span className="text-zinc-500 ml-1">%</span></div>
+          <div>
+            <span className="font-semibold text-xl">{humidity !== null ? humidity : '—'}</span>
+            <span className="text-zinc-500 ml-1">%</span>
+          </div>
         </div>
       </div>
 

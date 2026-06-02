@@ -5,6 +5,55 @@ import type { Device } from '../types';
 
 const HISTORY_UPDATE_INTERVAL = 600000;
 
+const SAMPLE_DEVICES: Device[] = [
+  {
+    id: 'light1',
+    name: 'Освещённость',
+    room: 'Гостиная',
+    type: 'sensor',
+    value: 420,
+    unit: 'lux',
+    status: 420,
+    lastUpdated: new Date().toISOString(),
+  },
+  {
+    id: 'temp1',
+    name: 'Температура',
+    room: 'Спальня',
+    type: 'sensor',
+    value: 24,
+    unit: '°C',
+    status: 24,
+    lastUpdated: new Date().toISOString(),
+  },
+  {
+    id: 'hum1',
+    name: 'Влажность',
+    room: 'Спальня',
+    type: 'sensor',
+    value: 58,
+    unit: '%',
+    status: 58,
+    lastUpdated: new Date().toISOString(),
+  },
+  {
+    id: 'relay1',
+    name: 'Реле освещения',
+    room: 'Гостиная',
+    type: 'relay',
+    status: true,
+    lastUpdated: new Date().toISOString(),
+  },
+  {
+    id: 'remote1',
+    name: 'ИК-пульт кондиционера',
+    room: 'Спальня',
+    type: 'ir_remote',
+    status: 'ready',
+    lastUpdated: new Date().toISOString(),
+  },
+];
+
 const roomNameMap: Record<string, string> = {
   living: 'Гостиная',
   kitchen: 'Кухня',
@@ -21,6 +70,7 @@ interface StoreState {
   activeFilter: 'all' | 'sensor' | 'relay' | 'ir';
   searchQuery: string;
   selectedSensorType: 'temperature' | 'humidity' | 'light' | null;
+  isDark: boolean;
 
   lightHistory: { timestamp: string; lux: number }[];
   lastLightUpdate: number;
@@ -29,7 +79,9 @@ interface StoreState {
   addDevice: (deviceData: any) => Promise<void>;
   updateDevice: (id: string, data: any) => Promise<void>;
   deleteDevice: (id: string) => Promise<void>;
+  toggleRelay: (deviceId: string) => Promise<void>;
   initWebSocket: () => void;
+  toggleTheme: () => void;
 
   setActiveTab: (tab: 'devices' | 'graphs' | 'scenarios') => void;
   setCurrentRoom: (roomId: string) => void;
@@ -49,15 +101,21 @@ export const useStore = create<StoreState>((set, get) => ({
   activeFilter: 'all',
   searchQuery: '',
   selectedSensorType: null,
+  isDark: typeof window !== 'undefined' ? localStorage.getItem('theme') !== 'light' : true,
   lightHistory: [],
   lastLightUpdate: 0,
 
   loadDevices: async () => {
     try {
       const devices = await api.getAllDevices();
-      set({ devices });
+      if (!devices || devices.length === 0) {
+        set({ devices: SAMPLE_DEVICES });
+      } else {
+        set({ devices });
+      }
     } catch (err) {
       console.error('Не удалось загрузить устройства', err);
+      set({ devices: SAMPLE_DEVICES });
     }
   },
 
@@ -85,6 +143,26 @@ export const useStore = create<StoreState>((set, get) => ({
       await get().loadDevices();
     } catch (err) {
       console.error(err);
+    }
+  },
+
+  toggleRelay: async (deviceId: string) => {
+    try {
+      set((state) => ({
+        devices: state.devices.map((device) => {
+          if (device.id !== deviceId || device.type !== 'relay') return device;
+          const nextStatus = !(typeof device.status === 'boolean' ? device.status : false);
+          return {
+            ...device,
+            status: nextStatus,
+            lastUpdated: new Date().toISOString(),
+          };
+        }),
+      }));
+
+      await api.toggleRelay(deviceId);
+    } catch (err) {
+      console.error('Не удалось переключить реле', err);
     }
   },
 
@@ -149,6 +227,15 @@ export const useStore = create<StoreState>((set, get) => ({
   setActiveFilter: (filter) => set({ activeFilter: filter }),
   setSearchQuery: (query) => set({ searchQuery: query }),
   setSelectedSensorType: (type) => set({ selectedSensorType: type }),
+  toggleTheme: () => {
+    set((state) => {
+      const nextTheme = !state.isDark;
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem('theme', nextTheme ? 'dark' : 'light');
+      }
+      return { isDark: nextTheme };
+    });
+  },
 
   addToLightHistory: (lux) => {
     const now = Date.now();

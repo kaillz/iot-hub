@@ -3,26 +3,35 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { useStore } from '../../store/useStore';
 import { api } from '../../lib/api';
 
+const sampleHistory = Array.from({ length: 24 }, (_, index) => {
+  const date = new Date(Date.now() - (23 - index) * 60 * 60 * 1000);
+  return {
+    time: date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
+    light: 380 + Math.round(Math.sin(index / 3) * 50),
+    temperature: 22 + Math.round(Math.cos(index / 4) * 2),
+    humidity: 50 + Math.round(Math.sin(index / 5) * 8),
+  };
+});
+
 export default function GraphsTab() {
   const selectedSensorType = useStore((state) => state.selectedSensorType);
   const [currentSensor, setCurrentSensor] = useState<'temperature' | 'humidity' | 'light'>('light');
-  const [chartData, setChartData] = useState<any[]>([]);
+  const [chartData, setChartData] = useState<any[]>(sampleHistory);
 
   // Загружаем историю из БД за последние 24 часа
   const loadHistory = async () => {
     try {
-      const history = await api.getHistory('light1', 'light', 500); // 500 точек = много
-
+      const history = await api.getHistory('light1', 'light', 500);
       const formatted = history.map((m: any) => ({
         time: new Date(m.timestamp).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
-        light: Math.round(m.value),
-        temperature: 0,
-        humidity: 0,
+        light: Number(m.value) || 0,
+        temperature: Number(m.temperature) || 22,
+        humidity: Number(m.humidity) || 50,
       }));
-
-      setChartData(formatted);
+      setChartData(formatted.length > 0 ? formatted : sampleHistory);
     } catch (err) {
       console.error('Не удалось загрузить историю', err);
+      setChartData(sampleHistory);
     }
   };
 
@@ -42,8 +51,6 @@ export default function GraphsTab() {
     humidity: { key: 'humidity', label: 'Влажность (%)', color: '#3b82f6' },
     light: { key: 'light', label: 'Освещённость (lux)', color: '#eab308' },
   };
-
-  const config = sensorConfigs[currentSensor];
 
   return (
     <div>
@@ -77,11 +84,27 @@ export default function GraphsTab() {
             <Tooltip contentStyle={{ backgroundColor: '#18181b', border: 'none', borderRadius: '12px' }} />
             <Line
               type="natural"
-              dataKey={config.key}
-              stroke={config.color}
-              strokeWidth={3}
+              dataKey="light"
+              stroke="#eab308"
+              strokeWidth={currentSensor === 'light' ? 4 : 2}
               dot={false}
-              activeDot={{ r: 6 }}
+              opacity={currentSensor === 'light' ? 1 : 0.35}
+            />
+            <Line
+              type="natural"
+              dataKey="temperature"
+              stroke="#f59e0b"
+              strokeWidth={currentSensor === 'temperature' ? 4 : 2}
+              dot={false}
+              opacity={currentSensor === 'temperature' ? 1 : 0.35}
+            />
+            <Line
+              type="natural"
+              dataKey="humidity"
+              stroke="#3b82f6"
+              strokeWidth={currentSensor === 'humidity' ? 4 : 2}
+              dot={false}
+              opacity={currentSensor === 'humidity' ? 1 : 0.35}
             />
           </LineChart>
         </ResponsiveContainer>

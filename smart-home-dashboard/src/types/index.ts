@@ -3,12 +3,14 @@ export interface Device {
   id: string;
   name: string;
   room: string;
-  type: 'relay' | 'sensor' | 'ir';
+  type: 'relay' | 'sensor' | 'ir' | 'ir_remote';
   status: boolean | number | string;
   value?: number;
   unit?: string;
+  temperature?: number;
+  humidity?: number;
   lastUpdated?: string;
-  icon?: any;          
+  icon?: any;
 }
 
 export interface Room {

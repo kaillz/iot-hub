@@ -22,6 +22,7 @@ function App() {
     loadDevices,
     updateDevice,
     deleteDevice,
+    toggleRelay,
     addDevice,               // ← для добавления нового устройства
     initWebSocket,
   } = useStore();
@@ -65,6 +66,7 @@ function App() {
                     id={device.id}
                     onUpdate={updateDevice}
                     onDelete={deleteDevice}
+                    onToggle={toggleRelay}
                     onShowHistory={(device) => {
                       if (device.type === 'sensor') {
                         useStore.getState().setSelectedSensorType('light');
