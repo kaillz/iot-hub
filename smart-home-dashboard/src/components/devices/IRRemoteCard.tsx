@@ -29,6 +29,7 @@ export default function IRRemoteCard({ id, name, room, onDelete, onUpdate }: IRR
         { id: 'sample-1', name: 'Вкючение', code: '0x1FE48B7', order: 0 },
         { id: 'sample-2', name: 'Выключение', code: '0x1FEA05F', order: 1 },
         { id: 'sample-3', name: 'Тепло +', code: '0x1FE58A7', order: 2 },
+        { id: 'sample-4', name: 'Тепло -', code: '0x1FEA857', order: 3 },
       ]);
     }
   };
@@ -39,11 +40,7 @@ export default function IRRemoteCard({ id, name, room, onDelete, onUpdate }: IRR
 
   const sendCommand = (cmd: any, e: React.MouseEvent) => {
     e.stopPropagation();
-    wsClient.ws?.send(JSON.stringify({
-      type: 'send_ir',
-      code: cmd.code,
-      name: cmd.name
-    }));
+    wsClient.send({ type: 'send_ir', code: cmd.code, name: cmd.name });
     addNotification('Команда отправлена', cmd.name, 'success');
   };
 

@@ -21,7 +21,7 @@ const MEASUREMENT_INTERVAL = 10 * 60 * 1000;
 async function cleanOldMeasurements() {
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
   const deleted = await prisma.measurement.deleteMany({ where: { timestamp: { lt: sevenDaysAgo } } });
-  if (deleted.count > 0) console.log(`🧹 Удалено ${deleted.count} записей`);
+  if (deleted.count > 0) console.log(`Удалено ${deleted.count} записей`);
 }
 cleanOldMeasurements();
 setInterval(cleanOldMeasurements, 24 * 60 * 60 * 1000);

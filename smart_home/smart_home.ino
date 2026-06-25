@@ -26,7 +26,7 @@ void setup() {
     delay(500);
     Serial.print(".");
   }
-  Serial.println("\n✅ WiFi подключён");
+  Serial.println("\nWiFi подключён");
 
   webSocket.begin(wsHost, wsPort, "/");
   webSocket.onEvent(webSocketEvent);

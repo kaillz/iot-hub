@@ -89,6 +89,8 @@ interface StoreState {
   setSearchQuery: (query: string) => void;
   setSelectedSensorType: (type: 'temperature' | 'humidity' | 'light' | null) => void;
   addToLightHistory: (lux: number) => void;
+  startSimulation: () => void;
+  stopSimulation: () => void;
 
   getFilteredDevices: () => Device[];
 }
@@ -110,12 +112,15 @@ export const useStore = create<StoreState>((set, get) => ({
       const devices = await api.getAllDevices();
       if (!devices || devices.length === 0) {
         set({ devices: SAMPLE_DEVICES });
+        get().startSimulation();
       } else {
         set({ devices });
+        get().stopSimulation();
       }
     } catch (err) {
       console.error('Не удалось загрузить устройства', err);
       set({ devices: SAMPLE_DEVICES });
+      get().startSimulation();
     }
   },
 
@@ -163,6 +168,64 @@ export const useStore = create<StoreState>((set, get) => ({
       await api.toggleRelay(deviceId);
     } catch (err) {
       console.error('Не удалось переключить реле', err);
+    }
+  },
+
+  startSimulation: () => {
+    // Не запускать повторно
+    if ((get() as any).simulationInterval) return;
+
+    const interval = setInterval(() => {
+      set((state) => {
+        const devices = state.devices.map((device) => {
+          if (device.type !== 'sensor') return device;
+
+          let nextValue = device.value ?? 0;
+
+          if (device.id === 'light1' || (device.name && device.name.toLowerCase().includes('освещ'))) {
+            // свет: более широкие колебания 0..1000
+            const delta = Math.floor(Math.random() * 80) - 40; // -40..+39
+            nextValue = Math.max(0, Math.min(1000, Math.round(nextValue + delta)));
+          } else if (device.name && device.name.toLowerCase().includes('темпера')) {
+            // температура: мелкие плавные колебания
+            const delta = (Math.random() * 0.8) - 0.4; // -0.4..+0.4
+            nextValue = Math.max(10, Math.min(35, Number((nextValue + delta).toFixed(1))));
+          } else if (device.name && device.name.toLowerCase().includes('влажн')) {
+            // влажность: небольшие колебания
+            const delta = Math.floor(Math.random() * 3) - 1; // -1..+1
+            nextValue = Math.max(0, Math.min(100, Math.round(nextValue + delta)));
+          } else {
+            // прочие сенсоры — небольшие колебания
+            const delta = Math.floor(Math.random() * 5) - 2;
+            nextValue = Math.max(0, Math.round(nextValue + delta));
+          }
+
+          return {
+            ...device,
+            value: typeof nextValue === 'number' && !Number.isInteger(nextValue) ? Number(nextValue) : nextValue,
+            status: nextValue,
+            lastUpdated: new Date().toISOString(),
+          };
+        });
+
+        // Обновляем историю освещённости отдельно
+        const light = devices.find((d) => d.id === 'light1');
+        if (light && typeof light.value === 'number') {
+          get().addToLightHistory(light.value as number);
+        }
+
+        return { devices };
+      });
+    }, 3000);
+
+    (get() as any).simulationInterval = interval;
+  },
+
+  stopSimulation: () => {
+    const maybeInterval = (get() as any).simulationInterval;
+    if (maybeInterval) {
+      clearInterval(maybeInterval);
+      (get() as any).simulationInterval = null;
     }
   },
 

@@ -1,6 +1,8 @@
 import Button from '../ui/Button';
 import { Power, Thermometer, Droplet, Sun, Zap } from 'lucide-react';
 import { useState } from 'react';
+import { useNotifications } from '../../store/useNotifications';
+import { wsClient } from '../../lib/websocket';
 import DeviceDetailModal from './DeviceDetailModal';
 import IRRemoteCard from './IRRemoteCard';
 import { useStore } from '../../store/useStore';
@@ -135,7 +137,25 @@ export default function DeviceCard({
             <Button
               variant="secondary"
               className="w-full py-3.5 text-base font-medium"
-              onClick={(e) => { e.stopPropagation(); alert(`Отправлена ИК-команда для ${device.name}`); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                const { addNotification } = useNotifications.getState();
+
+                // Показываем уведомление о начале отправки
+                addNotification('Отправка сигнала', device.name, 'info');
+
+                // Попытка отправить через WebSocket (если подключён)
+                try {
+                  wsClient.send({ type: 'send_ir', code: 'mock', name: device.name });
+                } catch (err) {
+                  // игнорируем ошибки отправки в эмуляции
+                }
+
+                // Через короткую паузу показываем успешную отправку
+                setTimeout(() => {
+                  addNotification('Команда отправлена', device.name, 'success');
+                }, 700);
+              }}
             >
               Отправить команду
             </Button>
