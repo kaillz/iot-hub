@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+/dist/
+/.vite/
+/.pio/
+
+# Local environment
+.env
+.env.local
+*.local
+
+# Databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+*.log
+
+# OS/editor noise
+.DS_Store
+.vscode/
+.idea/
+
+# Office files
+*.docx
+~$*
