@@ -1,4 +1,4 @@
-const API_BASE = 'http://localhost:3001/api';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
 
 export const api = {
   async getAllDevices(): Promise<any[]> {
@@ -83,7 +83,7 @@ export const api = {
   },
 
   updateIRCommand: async (commandId: string, data: any): Promise<any> => {
-    const res = await fetch(`http://localhost:3001/api/ir-commands/${commandId}`, {
+    const res = await fetch(`${API_BASE}/ir-commands/${commandId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),

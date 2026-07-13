@@ -2,16 +2,15 @@
 #include <WebSocketsClient.h>
 #include <SoftwareSerial.h>
 #include <ArduinoJson.h>
+#include "config.h"
 
-// ===================== НАСТРОЙКИ =====================
-const char* ssid     = "DIR-2150";
-const char* password = "KI2028llwifi!!wifi";
+const char* ssid = WIFI_SSID;
+const char* password = WIFI_PASSWORD;
 
-const char* wsHost = "192.168.0.113";   // ←←← ИЗМЕНИ НА IP ТВОЕГО КОМПЬЮТЕРА !!!
-const int   wsPort = 8080;
+const char* wsHost = WS_HOST;
+const int wsPort = WS_PORT;
 
-// SoftwareSerial (стабильно работает)
-SoftwareSerial stmSerial(4, 5);   // RX=GPIO4 (D2), TX=GPIO5 (D1)
+SoftwareSerial stmSerial(4, 5); 
 
 WebSocketsClient webSocket;
 
@@ -36,13 +35,12 @@ void setup() {
 void loop() {
   webSocket.loop();
 
-  // === Данные от STM32 → backend ===
   if (stmSerial.available()) {
     String data = stmSerial.readStringUntil('\n');
     data.trim();
     if (data.length() > 0) {
       Serial.printf("→ ОТ STM32: %s\n", data.c_str());
-      webSocket.sendTXT(data);           // пересылаем на сайт
+      webSocket.sendTXT(data);
     }
   }
 }
@@ -60,7 +58,7 @@ void webSocketEvent(WStype_t type, uint8_t* payload, size_t length) {
     case WStype_TEXT: {
       String msg = String((char*)payload);
       Serial.printf("← ОТ BACKEND: %s\n", msg.c_str());
-      stmSerial.println(msg);            // пересылаем на STM32 (send_ir)
+      stmSerial.println(msg);
       break;
     }
   }

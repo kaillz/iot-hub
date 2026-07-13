@@ -3,19 +3,21 @@ import cors from 'cors';
 import { WebSocketServer, WebSocket } from 'ws';
 import { PrismaClient } from '@prisma/client';
 import dotenv from 'dotenv';
+import path from 'node:path';
 
-dotenv.config();
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 const prisma = new PrismaClient();
 const app = express();
-const PORT = 3001;
-const WS_PORT = 8080;
+const HOST = process.env.HOST || '0.0.0.0';
+const PORT = Number(process.env.PORT || 3001);
+const WS_PORT = Number(process.env.WS_PORT || 8080);
+const WS_HOST = process.env.WS_HOST || HOST;
+const MEASUREMENT_INTERVAL = Number(process.env.MEASUREMENT_INTERVAL_MS || 10 * 60 * 1000);
+const CORS_ORIGINS = (process.env.CORS_ORIGINS || 'http://localhost:5173').split(',').map((origin) => origin.trim());
 
-app.use(cors());
+app.use(cors({ origin: CORS_ORIGINS, credentials: true }));
 app.use(express.json());
-
-let lastMeasurementTime = 0;
-const MEASUREMENT_INTERVAL = 10 * 60 * 1000;
 
 async function cleanOldMeasurements() {
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
@@ -143,7 +145,7 @@ app.put('/api/ir-commands/:commandId', async (req, res) => {
   }
 });
 
-const wss = new WebSocketServer({ port: WS_PORT });
+const wss = new WebSocketServer({ host: WS_HOST, port: WS_PORT });
 
 wss.on('connection', (ws) => {
   console.log('✅ ESP8266 подключён');
@@ -212,7 +214,7 @@ wss.on('connection', (ws) => {
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`🚀 Backend running on http://localhost:${PORT}`);
-  console.log(`🔌 WebSocket on ws://localhost:${WS_PORT}`);
+app.listen(PORT, HOST, () => {
+  console.log(`🚀 Backend running on http://${HOST}:${PORT}`);
+  console.log(`🔌 WebSocket on ws://${WS_HOST}:${WS_PORT}`);
 });

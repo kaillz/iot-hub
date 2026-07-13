@@ -3,7 +3,7 @@ class WebSocketClient {
   private listeners: ((data: any) => void)[] = [];
   private reconnectInterval: any = null;
 
-  private readonly URL = 'ws://localhost:8080';
+  private readonly URL = import.meta.env.VITE_WS_URL || 'ws://localhost:8080';
 
   addListener(callback: (data: any) => void) {
     this.listeners.push(callback);
