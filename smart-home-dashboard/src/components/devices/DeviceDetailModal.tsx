@@ -18,20 +18,17 @@ export default function DeviceDetailModal({
   onUpdate,
   onDelete,
 }: DeviceDetailModalProps) {
-
   const { devices, updateDevice, deleteDevice } = useStore();
 
-  const currentDevice = devices.find(d => d.id === initialDevice?.id);
+  const currentDevice = devices.find((d) => d.id === initialDevice?.id);
 
   const [name, setName] = useState('');
   const [room, setRoom] = useState('Гостиная');
 
-  // 🔥 Фиксируем момент открытия модалки (чтобы не сбрасывать при вводе)
   const prevOpenRef = useRef(false);
 
   useEffect(() => {
     if (isOpen && !prevOpenRef.current && currentDevice) {
-      // Сбрасываем поля ТОЛЬКО при открытии
       setName(currentDevice.name || '');
       setRoom(currentDevice.room || 'Гостиная');
     }
@@ -40,13 +37,12 @@ export default function DeviceDetailModal({
 
   const handleSave = () => {
     if (!currentDevice?.id) return;
-    
+
     const updatedData = { name, room };
-    
-    // Обновляем и через пропс, и напрямую в store
+
     onUpdate?.(currentDevice.id, updatedData);
     updateDevice(currentDevice.id, updatedData);
-    
+
     onClose();
   };
 
@@ -90,16 +86,16 @@ export default function DeviceDetailModal({
         </div>
 
         <div className="flex gap-3 pt-6">
-          <Button 
-            variant="secondary" 
-            className="flex-1 py-3" 
+          <Button
+            variant="secondary"
+            className="flex-1 py-3"
             onClick={onClose}
           >
             Отмена
           </Button>
-          <Button 
-            variant="primary" 
-            className="flex-1 py-3" 
+          <Button
+            variant="primary"
+            className="flex-1 py-3"
             onClick={handleSave}
           >
             Сохранить
@@ -107,8 +103,8 @@ export default function DeviceDetailModal({
         </div>
 
         <div className="pt-6 border-t border-red-900/30">
-          <Button 
-            variant="ghost" 
+          <Button
+            variant="ghost"
             className="w-full text-red-400 hover:text-red-500 py-3"
             onClick={handleDelete}
           >

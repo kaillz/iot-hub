@@ -30,9 +30,8 @@ export const useNotifications = create<NotificationsState>((set) => ({
     };
 
     set((state) => {
-      const newNotifications = [notification, ...state.notifications].slice(0, 5); // максимум 5 уведомлений
+      const newNotifications = [notification, ...state.notifications].slice(0, 5);
 
-      // Автоудаление через 8 секунд
       setTimeout(() => {
         set((s) => ({
           notifications: s.notifications.filter((n) => n.id !== notification.id),

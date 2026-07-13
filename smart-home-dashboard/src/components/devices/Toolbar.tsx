@@ -25,7 +25,6 @@ export default function Toolbar({ activeFilter, onFilterChange, onAddDevice }: T
       </div>
 
       <div className="flex items-center gap-3">
-        {/* Чипы фильтров */}
         <div className="flex items-center gap-1 bg-zinc-900 border border-zinc-800 rounded-2xl p-1">
           {filterButtons.map((btn) => (
             <button
@@ -42,7 +41,6 @@ export default function Toolbar({ activeFilter, onFilterChange, onAddDevice }: T
           ))}
         </div>
 
-        {/* Кнопка добавить */}
         <Button icon={Plus} onClick={onAddDevice}>
           Добавить устройство
         </Button>

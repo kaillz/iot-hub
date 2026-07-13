@@ -17,7 +17,6 @@ app.use(express.json());
 let lastMeasurementTime = 0;
 const MEASUREMENT_INTERVAL = 10 * 60 * 1000;
 
-// ===================== Автоочистка старых измерений =====================
 async function cleanOldMeasurements() {
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
   const deleted = await prisma.measurement.deleteMany({ where: { timestamp: { lt: sevenDaysAgo } } });
@@ -26,7 +25,6 @@ async function cleanOldMeasurements() {
 cleanOldMeasurements();
 setInterval(cleanOldMeasurements, 24 * 60 * 60 * 1000);
 
-// ===================== Seed =====================
 async function seedDatabase() {
   const existing = await prisma.device.findUnique({ where: { id: 'light1' } });
   if (!existing) {
@@ -37,7 +35,6 @@ async function seedDatabase() {
 }
 seedDatabase();
 
-// ===================== REST API =====================
 app.get('/api/devices', async (req, res) => {
   const devices = await prisma.device.findMany({ include: { irRemote: true } });
   res.json(devices);
@@ -82,7 +79,6 @@ app.get('/api/devices/:id/history', async (req, res) => {
   res.json(measurements);
 });
 
-// ===================== ИК-КОМАНДЫ =====================
 app.post('/api/ir-remotes/:remoteId/commands', async (req, res) => {
   const { remoteId } = req.params;
   const { name, code, protocol, bits } = req.body;
@@ -147,7 +143,6 @@ app.put('/api/ir-commands/:commandId', async (req, res) => {
   }
 });
 
-// ===================== WebSocket =====================
 const wss = new WebSocketServer({ port: WS_PORT });
 
 wss.on('connection', (ws) => {

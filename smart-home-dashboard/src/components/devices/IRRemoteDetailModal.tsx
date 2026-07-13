@@ -210,7 +210,6 @@ export default function IRRemoteDetailModal({
                   value={newCommandName}
                   onChange={(e) => setNewCommandName(e.target.value)}
                   className="w-full bg-zinc-900 border border-zinc-700 rounded-2xl px-4 py-3"
-                  placeholder="Например: Вкл / Temp +"
                   autoFocus
                 />
               </div>

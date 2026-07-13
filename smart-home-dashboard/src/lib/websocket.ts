@@ -1,8 +1,7 @@
-// src/lib/websocket.ts
 class WebSocketClient {
-  public ws: WebSocket | null = null;           // ← сделал public
+  public ws: WebSocket | null = null;
   private listeners: ((data: any) => void)[] = [];
-  private reconnectInterval: any = null;        // ← убрал NodeJS.Timeout
+  private reconnectInterval: any = null;
 
   private readonly URL = 'ws://localhost:8080';
 
@@ -47,7 +46,6 @@ class WebSocketClient {
     this.reconnectInterval = setInterval(() => this.connect(), 3000);
   }
 
-  // Публичный метод отправки (используется в IRRemoteCard)
   send(data: any) {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify(data));

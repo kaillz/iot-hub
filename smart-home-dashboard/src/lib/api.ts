@@ -1,15 +1,12 @@
-// src/lib/api.ts
 const API_BASE = 'http://localhost:3001/api';
 
 export const api = {
-  // Получить все устройства
   async getAllDevices(): Promise<any[]> {
     const res = await fetch(`${API_BASE}/devices`);
     if (!res.ok) throw new Error('Failed to fetch devices');
     return res.json();
   },
 
-  // Обновить устройство (имя, комнату и т.д.)
   async updateDevice(id: string, data: any): Promise<any> {
     const res = await fetch(`${API_BASE}/devices/${id}`, {
       method: 'PUT',
@@ -20,13 +17,11 @@ export const api = {
     return res.json();
   },
 
-  // Удалить устройство
   async deleteDevice(id: string): Promise<void> {
     const res = await fetch(`${API_BASE}/devices/${id}`, { method: 'DELETE' });
     if (!res.ok) throw new Error('Failed to delete device');
   },
 
-  // Получить историю измерений (для графиков)
   async getHistory(deviceId: string, type: string = 'light', limit: number = 200) {
     const res = await fetch(
       `${API_BASE}/devices/${deviceId}/history?type=${type}&limit=${limit}`
@@ -35,9 +30,8 @@ export const api = {
     return res.json();
   },
 
-  // Заглушка для реле и ИК (пока)
   async toggleRelay(deviceId: string): Promise<boolean> {
-    console.log(`[API] Переключение реле ${deviceId} (будет реализовано позже)`);
+    console.log(`[API] Переключение реле ${deviceId}`);
     return true;
   },
 
@@ -57,7 +51,6 @@ export const api = {
     return res.json();
   },
 
-  // === ИК-ПУЛЬТЫ ===
   async addIRRemote(name: string, room: string) {
     const res = await fetch(`${API_BASE}/devices`, {
       method: 'POST',

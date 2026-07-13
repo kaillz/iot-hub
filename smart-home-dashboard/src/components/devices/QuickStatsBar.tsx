@@ -5,7 +5,7 @@ export default function QuickStatsBar() {
   const { devices, isConnected } = useStore();
   const lightDevice = devices.find(d => d.id === 'light1');
   const lux = lightDevice?.value ?? null;
-  const raw = lightDevice?.raw ?? null;   // ← отладка
+  const raw = lightDevice?.raw ?? null;
 
   return (
     <div className="bg-zinc-900 border border-zinc-800 rounded-2xl px-8 py-5 mb-8 flex items-center justify-between text-sm">
@@ -21,7 +21,6 @@ export default function QuickStatsBar() {
           </div>
         </div>
 
-        {/* заглушки BME */}
         <div className="flex items-center gap-3 opacity-40">
           <Thermometer size={24} className="text-orange-400" />
           <div><span className="font-semibold text-xl">—</span><span className="text-zinc-500 ml-1">°C</span></div>

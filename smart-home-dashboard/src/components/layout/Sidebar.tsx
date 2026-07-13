@@ -1,4 +1,4 @@
-import { Home, Zap, Sun, Droplet, Plus } from 'lucide-react';
+import { Home, Zap, Sun, Droplet } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { useNotifications } from '../../store/useNotifications';
 import { formatDistanceToNow } from 'date-fns';
@@ -19,7 +19,6 @@ export default function Sidebar() {
   return (
     <div className="w-72 border-r border-zinc-800 bg-zinc-950 flex flex-col h-full overflow-auto">
       <div className="p-6 pt-8">
-        {/* Выбор дома */}
         <div className="mb-8">
           <div className="text-xs uppercase tracking-widest text-zinc-500 mb-2 px-3">ДОМ</div>
           <div className="px-4 py-3 bg-zinc-900 border border-zinc-700 rounded-2xl flex items-center justify-between text-sm">
@@ -28,7 +27,6 @@ export default function Sidebar() {
           </div>
         </div>
 
-        {/* Список комнат */}
         <div className="uppercase text-xs font-semibold tracking-widest text-zinc-500 mb-4 px-3">
           КОМНАТЫ
         </div>
@@ -58,12 +56,11 @@ export default function Sidebar() {
         </div>
       </div>
 
-      {/* Уведомления */}
       <div className="mt-auto border-t border-zinc-800 p-6">
         <div className="uppercase text-xs font-semibold tracking-widest text-zinc-500 mb-3 px-3 flex justify-between items-center">
           <span>УВЕДОМЛЕНИЯ</span>
           {notifications.length > 0 && (
-            <button 
+            <button
               onClick={clearAll}
               className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
             >

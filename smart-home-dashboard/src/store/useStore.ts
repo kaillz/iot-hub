@@ -89,16 +89,15 @@ export const useStore = create<StoreState>((set, get) => ({
   },
 
   initWebSocket: () => {
-    // Подписываемся на сообщения через addListener (новый API)
     const handleMessage = (data: any) => {
       if (data.light_raw !== undefined || data.lux !== undefined) {
-        const lux = data.lux !== undefined 
-          ? data.lux 
+        const lux = data.lux !== undefined
+          ? data.lux
           : Math.max(0, Math.min(1000, Math.floor((950 - Number(data.light_raw)) * 0.12)));
 
         set((state) => {
           const devices = [...state.devices];
-          const index = devices.findIndex(d => d.id === 'light1');
+          const index = devices.findIndex((d) => d.id === 'light1');
 
           if (index !== -1) {
             devices[index] = {
@@ -117,7 +116,7 @@ export const useStore = create<StoreState>((set, get) => ({
               value: lux,
               status: lux,
               unit: 'lux',
-              raw: data.light_raw,           // raw теперь разрешён
+              raw: data.light_raw,
               lastUpdated: new Date().toISOString(),
             });
           }
@@ -130,7 +129,6 @@ export const useStore = create<StoreState>((set, get) => ({
 
     wsClient.addListener(handleMessage);
 
-    // Подписка на open/close для статуса подключения
     const handleOpen = () => set({ isConnected: true });
     const handleClose = () => set({ isConnected: false });
     const handleError = () => set({ isConnected: false });

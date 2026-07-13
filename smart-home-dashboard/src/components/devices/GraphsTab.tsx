@@ -8,10 +8,9 @@ export default function GraphsTab() {
   const [currentSensor, setCurrentSensor] = useState<'temperature' | 'humidity' | 'light'>('light');
   const [chartData, setChartData] = useState<any[]>([]);
 
-  // Загружаем историю из БД за последние 24 часа
   const loadHistory = async () => {
     try {
-      const history = await api.getHistory('light1', 'light', 500); // 500 точек = много
+      const history = await api.getHistory('light1', 'light', 500);
 
       const formatted = history.map((m: any) => ({
         time: new Date(m.timestamp).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
@@ -28,11 +27,10 @@ export default function GraphsTab() {
 
   useEffect(() => {
     loadHistory();
-    const interval = setInterval(loadHistory, 60000); // обновляем график раз в минуту
+    const interval = setInterval(loadHistory, 60000);
     return () => clearInterval(interval);
   }, []);
 
-  // При смене датчика (пока только light)
   useEffect(() => {
     if (selectedSensorType) setCurrentSensor(selectedSensorType);
   }, [selectedSensorType]);

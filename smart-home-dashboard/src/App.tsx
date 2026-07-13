@@ -11,7 +11,6 @@ import { wsClient } from './lib/websocket';
 
 function App() {
   const {
-    devices,
     activeTab,
     setActiveTab,
     searchQuery,
@@ -22,7 +21,7 @@ function App() {
     loadDevices,
     updateDevice,
     deleteDevice,
-    addDevice,               // ← для добавления нового устройства
+    addDevice,
     initWebSocket,
   } = useStore();
 
@@ -30,7 +29,6 @@ function App() {
 
   const filteredDevices = getFilteredDevices();
 
-  // Загрузка устройств из БД + запуск WebSocket
   useEffect(() => {
     loadDevices();
     initWebSocket();
@@ -40,7 +38,6 @@ function App() {
     };
   }, [loadDevices, initWebSocket]);
 
-  // Обработчик добавления устройства
   const handleAddDevice = async (newDevice: any) => {
     await addDevice(newDevice);
   };
@@ -55,7 +52,7 @@ function App() {
               <Toolbar
                 activeFilter={activeFilter}
                 onFilterChange={setActiveFilter}
-                onAddDevice={() => setIsAddModalOpen(true)}   // ← кнопка "Добавить"
+                onAddDevice={() => setIsAddModalOpen(true)}
               />
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -99,7 +96,7 @@ function App() {
     <Layout
       activeTab={activeTab}
       onTabChange={setActiveTab}
-      onAddDevice={() => setIsAddModalOpen(true)}     // ← кнопка в шапке тоже работает
+      onAddDevice={() => setIsAddModalOpen(true)}
       searchQuery={searchQuery}
       onSearchChange={setSearchQuery}
     >
@@ -107,7 +104,6 @@ function App() {
         {renderContent()}
       </div>
 
-      {/* Модалка добавления устройства */}
       <AddDeviceModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}

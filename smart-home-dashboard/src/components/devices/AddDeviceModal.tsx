@@ -16,7 +16,7 @@ export default function AddDeviceModal({ isOpen, onClose }: AddDeviceModalProps)
     name: '',
     type: 'network' as 'network' | 'ir_remote',
     room: 'Гостиная',
-    ip: '',                    // только для network
+    ip: '',
   });
 
   const rooms = ['Гостиная', 'Кухня', 'Спальня', 'Ванная', 'Коридор'];
@@ -46,7 +46,6 @@ export default function AddDeviceModal({ isOpen, onClose }: AddDeviceModalProps)
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Добавить устройство">
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Название */}
         <div>
           <label className="block text-sm text-zinc-400 mb-2">Название устройства</label>
           <input
@@ -54,12 +53,10 @@ export default function AddDeviceModal({ isOpen, onClose }: AddDeviceModalProps)
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
             className="w-full bg-zinc-950 border border-zinc-700 rounded-2xl px-4 py-3 focus:outline-none focus:border-sky-600"
-            placeholder="Например: Кондиционер в спальне"
             required
           />
         </div>
 
-        {/* Тип устройства */}
         <div>
           <label className="block text-sm text-zinc-400 mb-2">Тип устройства</label>
           <div className="grid grid-cols-2 gap-3">
@@ -88,7 +85,6 @@ export default function AddDeviceModal({ isOpen, onClose }: AddDeviceModalProps)
           </div>
         </div>
 
-        {/* Комната */}
         <div>
           <label className="block text-sm text-zinc-400 mb-2">Комната</label>
           <select
@@ -102,7 +98,6 @@ export default function AddDeviceModal({ isOpen, onClose }: AddDeviceModalProps)
           </select>
         </div>
 
-        {/* Поле IP — только для сетевых */}
         {formData.type === 'network' && (
           <div>
             <label className="block text-sm text-zinc-400 mb-2">IP-адрес (опционально)</label>
@@ -111,7 +106,6 @@ export default function AddDeviceModal({ isOpen, onClose }: AddDeviceModalProps)
               value={formData.ip}
               onChange={(e) => setFormData({ ...formData, ip: e.target.value })}
               className="w-full bg-zinc-950 border border-zinc-700 rounded-2xl px-4 py-3 focus:outline-none focus:border-sky-600"
-              placeholder="192.168.1.XXX"
             />
           </div>
         )}

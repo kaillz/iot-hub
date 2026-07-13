@@ -1,5 +1,5 @@
 import Button from '../ui/Button';
-import { Power, Thermometer, Droplet, Sun, Zap } from 'lucide-react';
+import { Power, Thermometer, Sun, Zap } from 'lucide-react';
 import { useState } from 'react';
 import DeviceDetailModal from './DeviceDetailModal';
 import IRRemoteCard from './IRRemoteCard';
@@ -26,7 +26,6 @@ export default function DeviceCard({
 
   if (!device) return null;
 
-  // === ИК-ПУЛЬТ ===
   if (device.type === 'ir_remote') {
     return (
       <IRRemoteCard
@@ -38,7 +37,6 @@ export default function DeviceCard({
     );
   }
 
-  // === ОБЫЧНЫЕ УСТРОЙСТВА ===
   const isRelay = device.type === 'relay';
   const isSensor = device.type === 'sensor';
   const isIR = device.type === 'ir';
@@ -110,11 +108,11 @@ export default function DeviceCard({
         <div className="p-6 pt-2 border-t border-zinc-800">
           {isRelay && (
             <Button
-              variant={isOn ? "primary" : "secondary"}
+              variant={isOn ? 'primary' : 'secondary'}
               className="w-full py-3.5 text-base font-medium"
               onClick={(e) => { e.stopPropagation(); onToggle?.(device.id); }}
             >
-              {isOn ? "Выключить" : "Включить"}
+              {isOn ? 'Выключить' : 'Включить'}
             </Button>
           )}
 
